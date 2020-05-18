@@ -17,10 +17,17 @@ import java.io.ByteArrayOutputStream;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.databinding.DataBindingUtil;
 
+/**
+ * @author zuo
+ * @date 2020/5/18 11:29
+ */
 public class MainActivity extends AppCompatActivity {
+
+    private SocketClientImpl socketClient;
+    private ActivityMainBinding binding;
+
     //持续接收服务端反馈信息
     private StringBuilder buffer = new StringBuilder();
-
     Handler handler = new Handler(new Handler.Callback() {
 
         @Override
@@ -41,9 +48,6 @@ public class MainActivity extends AppCompatActivity {
         }
     });
 
-    private ActivityMainBinding binding;
-    private SocketClientImpl socketClient;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -53,19 +57,11 @@ public class MainActivity extends AppCompatActivity {
         startSocketClient();
     }
 
-    /**
-     * 主线程更新UI
-     */
     private void showSocketMsg(final byte[] data) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (null != binding) {
-                    binding.backMsgShow.setText(buffer.toString());
-                }
-                showImg(data);
-            }
-        });
+        if (null != binding) {
+            binding.backMsgShow.setText(buffer.toString());
+        }
+        showImg(data);
     }
 
     private void startSocketClient() {
@@ -87,20 +83,16 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void sendData2Server(final String hint, final Bitmap bmp) {
+    public void sendData2Server(final String hint, final Bitmap bmp) throws Exception {
         if (null != socketClient) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             byte[] array = null;
-            try {
-                if (null != bmp) {
-                    bmp.compress(Bitmap.CompressFormat.PNG, 100, baos);
-                    array = baos.toByteArray();
-                }
-                byte[] bytes = SendDataUtils.makeSendData(hint, array);
-                socketClient.send(bytes);
-            } catch (Exception e) {
-                e.printStackTrace();
+            if (null != bmp) {
+                bmp.compress(Bitmap.CompressFormat.PNG, 100, baos);
+                array = baos.toByteArray();
             }
+            byte[] bytes = SendDataUtils.makeSendData(hint, array);
+            socketClient.send(bytes);
         }
     }
 

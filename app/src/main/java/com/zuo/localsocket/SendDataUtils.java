@@ -8,6 +8,12 @@ import androidx.annotation.NonNull;
 
 /**
  * LocalSocket 传输数据（封装、解析）工具类
+ * <p>
+ * 数据传输规则：
+ * [0,7)  -- infoSize
+ * [7,14) -- dataSize
+ * [14,14+infoSize) -- info
+ * [14+infoSize,14+infoSize+dataSize)  -- data
  *
  * @author zuo
  * @date 2020/5/14 19:20
@@ -71,10 +77,14 @@ public class SendDataUtils {
         String dataLength = new String(dataSizeByte);
         String dataSizeStr = dataLength.trim();
         Integer dataSize = Integer.valueOf(dataSizeStr);
+        //数据读取
+        SocketParseBean parseBean = new SocketParseBean();
+        if (infoSize <= 0 && dataSize <= 0) {
+            return parseBean;
+        }
         //读取info
         byte[] infoByte = new byte[infoSize];
         is.read(infoByte, 0, infoSize);
-        SocketParseBean parseBean = new SocketParseBean();
         String s = new String(infoByte, "utf-8");
         parseBean.setInfo(s.trim());
         //读取data

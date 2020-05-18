@@ -20,15 +20,20 @@ import androidx.annotation.IntRange;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.databinding.DataBindingUtil;
 
+/**
+ * @author zuo
+ * @date 2020/5/18 11:01
+ */
 public class MainActivity extends AppCompatActivity {
 
+    private SocketServerImpl socketServer;
     private ActivityMainBinding binding;
     private List<Integer> data;
     @IntRange(from = 0, to = 3)
     private int index = 0;
+
     //持续接收客户端反馈信息
     private StringBuilder buffer = new StringBuilder();
-
     Handler handler = new Handler(new Handler.Callback() {
 
         @Override
@@ -49,7 +54,6 @@ public class MainActivity extends AppCompatActivity {
             return false;
         }
     });
-    private SocketServerImpl socketServer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,18 +65,10 @@ public class MainActivity extends AppCompatActivity {
         startSocketServer();
     }
 
-    /**
-     * 主线程更新UI
-     */
     private void showSocketMsg() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (null != binding) {
-                     binding.backMsgShow.setText(buffer.toString());
-                }
-            }
-        });
+        if (null != binding) {
+            binding.backMsgShow.setText("客户端消息：" + buffer.toString());
+        }
     }
 
     private void startSocketServer() {

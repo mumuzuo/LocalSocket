@@ -58,7 +58,7 @@ public class SendDataUtils {
      * @throws Exception
      */
     public static SocketParseBean parseSendData(BufferedInputStream is) throws Exception {
-        if (null == is||is.available() <= 0) return null;
+        if (null == is || is.available() <= 0) return null;
         //拿到info信息的size
         byte[] infoSizeByte = new byte[infoSize];
         is.read(infoSizeByte);
@@ -71,10 +71,14 @@ public class SendDataUtils {
         String dataLength = new String(dataSizeByte);
         String dataSizeStr = dataLength.trim();
         Integer dataSize = Integer.valueOf(dataSizeStr);
+        //数据读取
+        SocketParseBean parseBean = new SocketParseBean();
+        if (infoSize <= 0 && dataSize <= 0) {
+            return parseBean;
+        }
         //读取info
         byte[] infoByte = new byte[infoSize];
         is.read(infoByte, 0, infoSize);
-        SocketParseBean parseBean = new SocketParseBean();
         String s = new String(infoByte, "utf-8");
         parseBean.setInfo(s.trim());
         //读取data
