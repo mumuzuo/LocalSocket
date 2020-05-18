@@ -8,6 +8,12 @@ import androidx.annotation.NonNull;
 
 /**
  * LocalSocket 传输数据（封装、解析）工具类
+ * <p>
+ * 数据传输规则：
+ * [0,7)  -- infoSize
+ * [7,14) -- dataSize
+ * [14,14+infoSize) -- info
+ * [14+infoSize,14+infoSize+dataSize)  -- data
  *
  * @author zuo
  * @date 2020/5/14 19:20
