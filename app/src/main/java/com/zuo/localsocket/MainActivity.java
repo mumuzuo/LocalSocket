@@ -13,6 +13,8 @@ import com.zuo.localsocket.databinding.ActivityMainBinding;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.databinding.DataBindingUtil;
@@ -83,17 +85,27 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void sendData2Server(final String hint, final Bitmap bmp) throws Exception {
-        if (null != socketClient) {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            byte[] array = null;
-            if (null != bmp) {
-                bmp.compress(Bitmap.CompressFormat.PNG, 100, baos);
-                array = baos.toByteArray();
+    public void sendData2Server(final String hint, final Bitmap bmp) {
+        ExecutorService service = Executors.newSingleThreadExecutor();
+        service.submit(new Runnable() {
+            @Override
+            public void run() {
+                if (null != socketClient) {
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    byte[] array = null;
+                    try {
+                        if (null != bmp) {
+                            bmp.compress(Bitmap.CompressFormat.PNG, 100, baos);
+                            array = baos.toByteArray();
+                        }
+                        byte[] bytes = SendDataUtils.makeSendData(hint, array);
+                        socketClient.send(bytes);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
             }
-            byte[] bytes = SendDataUtils.makeSendData(hint, array);
-            socketClient.send(bytes);
-        }
+        });
     }
 
     public class Presenter {

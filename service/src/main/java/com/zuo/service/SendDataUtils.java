@@ -1,8 +1,12 @@
 package com.zuo.service;
 
 import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import androidx.annotation.NonNull;
 
@@ -55,7 +59,6 @@ public class SendDataUtils {
         }
         return output;
     }
-
     /**
      * 解析 LocalSocket 接收到的数据
      *
@@ -63,37 +66,55 @@ public class SendDataUtils {
      * @return 解析后的数据
      * @throws Exception
      */
-    public static SocketParseBean parseSendData(BufferedInputStream is) throws Exception {
+    private static SocketParseBean parseBean;
+
+    public static SocketParseBean parseSendData(final BufferedInputStream is) throws Exception {
         if (null == is || is.available() <= 0) return null;
-        //拿到info信息的size
-        byte[] infoSizeByte = new byte[infoSize];
-        is.read(infoSizeByte);
-        String infoLength = new String(infoSizeByte);
-        String infoSizeStr = infoLength.trim();
-        Integer infoSize = Integer.valueOf(infoSizeStr);
-        //拿到data的size
-        byte[] dataSizeByte = new byte[dataSize];
-        is.read(dataSizeByte);
-        String dataLength = new String(dataSizeByte);
-        String dataSizeStr = dataLength.trim();
-        Integer dataSize = Integer.valueOf(dataSizeStr);
-        //数据读取
-        SocketParseBean parseBean = new SocketParseBean();
-        if (infoSize <= 0 && dataSize <= 0) {
-            return parseBean;
-        }
-        //读取info
-        byte[] infoByte = new byte[infoSize];
-        is.read(infoByte, 0, infoSize);
-        String s = new String(infoByte, "utf-8");
-        parseBean.setInfo(s.trim());
-        //读取data
-        if (dataSize > 0) {
-            byte[] buffer = new byte[dataSize];
-            is.read(buffer, 0, dataSize);
-            parseBean.setData(buffer);
+        parseBean = new SocketParseBean();
+        final CountDownLatch countDownLatch = new CountDownLatch(1);
+        ExecutorService service = Executors.newSingleThreadExecutor();
+        service.submit(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    //拿到info信息的size
+                    byte[] infoSizeByte = new byte[infoSize];
+                    is.read(infoSizeByte);
+                    String infoLength = new String(infoSizeByte);
+                    String infoSizeStr = infoLength.trim();
+                    Integer infoSize = Integer.valueOf(infoSizeStr);
+                    //拿到data的size
+                    byte[] dataSizeByte = new byte[dataSize];
+                    is.read(dataSizeByte);
+                    String dataLength = new String(dataSizeByte);
+                    String dataSizeStr = dataLength.trim();
+                    Integer dataSize = Integer.valueOf(dataSizeStr);
+                    //数据读取
+                    if (infoSize <= 0 && dataSize <= 0) {
+                        return;
+                    }
+                    //读取info
+                    byte[] infoByte = new byte[infoSize];
+                    is.read(infoByte, 0, infoSize);
+                    String s = new String(infoByte, "utf-8");
+                    parseBean.setInfo(s.trim());
+                    //读取data
+                    if (dataSize > 0) {
+                        byte[] buffer = new byte[dataSize];
+                        is.read(buffer, 0, dataSize);
+                        parseBean.setData(buffer);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                countDownLatch.countDown();
+            }
+        });
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+
         }
         return parseBean;
     }
-
 }

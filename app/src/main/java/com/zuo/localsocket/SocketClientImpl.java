@@ -1,7 +1,5 @@
 package com.zuo.localsocket;
 
-import android.net.LocalSocket;
-import android.net.LocalSocketAddress;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -9,6 +7,7 @@ import android.util.Log;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.net.Socket;
 
 /**
  * 和服务端进行数据收发
@@ -18,12 +17,12 @@ import java.io.IOException;
  */
 public class SocketClientImpl implements Runnable {
     private static final String TAG = "SocketClientImpl";
-    private String localSocketAddress = "com.zuo.service";
+    private String localSocketAddress = "kingoituavlink";
     private BufferedOutputStream os;
     private BufferedInputStream is;
     private int timeout = 30000;
     public static final int bufferSizeOutput = 1024 * 1024;
-    private LocalSocket client;
+    private Socket client;
     private Handler handler;
 
     public SocketClientImpl(Handler handler) {
@@ -35,14 +34,16 @@ public class SocketClientImpl implements Runnable {
         Log.i(TAG, "Client isOpen");
         try {
             if (null == client) {
-                client = new LocalSocket();
-                client.connect(new LocalSocketAddress(localSocketAddress));
+//                client = new LocalSocket();
+                client = new Socket("localhost", 8080);
+//                client.connect(new LocalSocketAddress(localSocketAddress));
                 client.setSoTimeout(timeout);
                 Log.i(TAG, "Server Connected");
             }
             os = new BufferedOutputStream(client.getOutputStream(), bufferSizeOutput);
             is = new BufferedInputStream(client.getInputStream(), bufferSizeOutput);
         } catch (IOException e1) {
+            Log.i(TAG, e1.getMessage());
             e1.printStackTrace();
         }
         //将接收到的数据发送出去
@@ -64,7 +65,7 @@ public class SocketClientImpl implements Runnable {
      *
      * @param data
      */
-    public void send(byte[] data) throws Exception {
+    public synchronized void send(byte[] data) throws Exception {
         if (null != os) {
             os.write(data);
             os.flush();

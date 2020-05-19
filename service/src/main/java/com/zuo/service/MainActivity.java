@@ -15,6 +15,8 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import androidx.annotation.IntRange;
 import androidx.appcompat.app.AppCompatActivity;
@@ -92,20 +94,26 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void sendData(final String hint, final Bitmap bmp) {
-        if (null != socketServer) {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            byte[] array = null;
-            try {
-                if (null != bmp) {
-                    bmp.compress(Bitmap.CompressFormat.PNG, 100, baos);
-                    array = baos.toByteArray();
+        ExecutorService service = Executors.newSingleThreadExecutor();
+        service.submit(new Runnable() {
+            @Override
+            public void run() {
+                if (null != socketServer) {
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    byte[] array = null;
+                    try {
+                        if (null != bmp) {
+                            bmp.compress(Bitmap.CompressFormat.PNG, 100, baos);
+                            array = baos.toByteArray();
+                        }
+                        byte[] bytes = SendDataUtils.makeSendData(hint, array);
+                        socketServer.send(bytes);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
-                byte[] bytes = SendDataUtils.makeSendData(hint, array);
-                socketServer.send(bytes);
-            } catch (Exception e) {
-                e.printStackTrace();
             }
-        }
+        });
     }
 
     @Override
