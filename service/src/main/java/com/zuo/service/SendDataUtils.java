@@ -89,15 +89,13 @@ public class SendDataUtils {
                     String dataLength = new String(dataSizeByte);
                     String dataSizeStr = dataLength.trim();
                     Integer dataSize = Integer.valueOf(dataSizeStr);
-                    //数据读取
-                    if (infoSize <= 0 && dataSize <= 0) {
-                        return;
-                    }
                     //读取info
-                    byte[] infoByte = new byte[infoSize];
-                    is.read(infoByte, 0, infoSize);
-                    String s = new String(infoByte, "utf-8");
-                    parseBean.setInfo(s.trim());
+                    if (infoSize > 0) {
+                        byte[] infoByte = new byte[infoSize];
+                        is.read(infoByte, 0, infoSize);
+                        String s = new String(infoByte, "utf-8");
+                        parseBean.setInfo(s.trim());
+                    }
                     //读取data
                     if (dataSize > 0) {
                         byte[] buffer = new byte[dataSize];
