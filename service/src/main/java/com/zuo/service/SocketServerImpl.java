@@ -20,7 +20,6 @@ import java.net.Socket;
  */
 public class SocketServerImpl implements Runnable {
     private static final String TAG = "SocketServerImpl";
-    private String localSocketAddress = "kingoituavlink";
     private BufferedOutputStream os;
     private BufferedInputStream is;
     public static final int bufferSizeOutput = 1024 * 1024;
@@ -37,7 +36,6 @@ public class SocketServerImpl implements Runnable {
         Log.i(TAG, "Server isOpen");
         try {
             if (null == server) {
-//                server = new LocalServerSocket(localSocketAddress);
                 server = new ServerSocket(8080);
             }
             if (null == client) {

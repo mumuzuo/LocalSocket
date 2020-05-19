@@ -17,7 +17,6 @@ import java.net.Socket;
  */
 public class SocketClientImpl implements Runnable {
     private static final String TAG = "SocketClientImpl";
-    private String localSocketAddress = "kingoituavlink";
     private BufferedOutputStream os;
     private BufferedInputStream is;
     private int timeout = 30000;
@@ -34,9 +33,7 @@ public class SocketClientImpl implements Runnable {
         Log.i(TAG, "Client isOpen");
         try {
             if (null == client) {
-//                client = new LocalSocket();
                 client = new Socket("localhost", 8080);
-//                client.connect(new LocalSocketAddress(localSocketAddress));
                 client.setSoTimeout(timeout);
                 Log.i(TAG, "Server Connected");
             }
