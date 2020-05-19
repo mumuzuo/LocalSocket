@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,7 +39,7 @@ public class SendDataUtils {
      */
     public static byte[] makeSendData(@NonNull String info, byte[] data) throws Exception {
         //文本信息
-        Charset charset_utf8 = Charset.forName("utf-8");
+        Charset charset_utf8 = StandardCharsets.UTF_8;
         ByteBuffer buff = charset_utf8.encode(info);
         byte[] infoBytes = buff.array();
         int infoLength = infoBytes.length;
@@ -59,6 +60,7 @@ public class SendDataUtils {
         }
         return output;
     }
+
     /**
      * 解析 LocalSocket 接收到的数据
      *
@@ -82,18 +84,18 @@ public class SendDataUtils {
                     is.read(infoSizeByte);
                     String infoLength = new String(infoSizeByte);
                     String infoSizeStr = infoLength.trim();
-                    Integer infoSize = Integer.valueOf(infoSizeStr);
+                    int infoSize = Integer.parseInt(infoSizeStr);
                     //拿到data的size
                     byte[] dataSizeByte = new byte[dataSize];
                     is.read(dataSizeByte);
                     String dataLength = new String(dataSizeByte);
                     String dataSizeStr = dataLength.trim();
-                    Integer dataSize = Integer.valueOf(dataSizeStr);
+                    int dataSize = Integer.parseInt(dataSizeStr);
                     //读取info
                     if (infoSize > 0) {
                         byte[] infoByte = new byte[infoSize];
                         is.read(infoByte, 0, infoSize);
-                        String s = new String(infoByte, "utf-8");
+                        String s = new String(infoByte, StandardCharsets.UTF_8);
                         parseBean.setInfo(s.trim());
                     }
                     //读取data
@@ -110,8 +112,8 @@ public class SendDataUtils {
         });
         try {
             countDownLatch.await();
-        } catch (InterruptedException e) {
-
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return parseBean;
     }
