@@ -12,11 +12,8 @@ import android.widget.Toast;
 import com.zuo.service.databinding.ActivityMainBinding;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import androidx.annotation.IntRange;
 import androidx.appcompat.app.AppCompatActivity;
@@ -28,7 +25,8 @@ import androidx.databinding.DataBindingUtil;
  */
 public class MainActivity extends AppCompatActivity {
 
-    private SocketServerImpl socketServer;
+    //    private SocketServerImpl socketServer;
+    private SocketTextImpl socket;
     private ActivityMainBinding binding;
     private List<Integer> data;
     @IntRange(from = 0, to = 3)
@@ -44,7 +42,9 @@ public class MainActivity extends AppCompatActivity {
                 SocketParseBean bean = null;
                 try {
                     bean = SendDataUtils.parseSendData((BufferedInputStream) msg.obj);
-                    if (null == bean || TextUtils.isEmpty(bean.getInfo())) return false;
+                    if (null == bean || TextUtils.isEmpty(bean.getInfo())) {
+                        return false;
+                    }
                     showImg();
                 } catch (Exception e) {
                     return false;
@@ -65,6 +65,29 @@ public class MainActivity extends AppCompatActivity {
         binding.setPresenter(new Presenter());
         initData();
         startSocketServer();
+        observerData();
+    }
+
+    private void observerData() {
+        ThreadFactoryImpl threadFactory = new ThreadFactoryImpl();
+        threadFactory.newThread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    String data = LiveStreamRepository.getInstance().getData();
+                    if (!TextUtils.isEmpty(data)) {
+                        buffer.append(data);
+                        buffer.append("\r\n");
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                showSocketMsg();
+                            }
+                        });
+                    }
+                }
+            }
+        }).start();
     }
 
     private void showSocketMsg() {
@@ -74,8 +97,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startSocketServer() {
-        socketServer = new SocketServerImpl(handler);
-        new Thread(socketServer).start();
+//        socketServer = new SocketServerImpl(handler);
+        socket = new SocketTextImpl();
+        new Thread(socket).start();
     }
 
     private void initData() {
@@ -94,33 +118,28 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void sendData(final String hint, final Bitmap bmp) {
-        ExecutorService service = Executors.newSingleThreadExecutor();
-        service.submit(new Runnable() {
+        ThreadFactoryImpl threadFactory = new ThreadFactoryImpl();
+        threadFactory.newThread(new Runnable() {
             @Override
             public void run() {
-                if (null != socketServer) {
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    byte[] array = null;
+                if (null != socket) {
                     try {
                         if (null != bmp) {
-                            bmp.compress(Bitmap.CompressFormat.PNG, 100, baos);
-                            array = baos.toByteArray();
+                            socket.send(hint);
                         }
-                        byte[] bytes = SendDataUtils.makeSendData(hint, array);
-                        socketServer.send(bytes);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
             }
-        });
+        }).start();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (null != socketServer) {
-            socketServer.close();
+        if (null != socket) {
+            socket.close();
         }
     }
 

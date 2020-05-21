@@ -12,9 +12,6 @@ import android.widget.Toast;
 import com.zuo.localsocket.databinding.ActivityMainBinding;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.databinding.DataBindingUtil;
@@ -25,7 +22,8 @@ import androidx.databinding.DataBindingUtil;
  */
 public class MainActivity extends AppCompatActivity {
 
-    private SocketClientImpl socketClient;
+    //    private SocketClientImpl socketClient;
+    private SocketTextImpl socketClient;
     private ActivityMainBinding binding;
 
     //持续接收服务端反馈信息
@@ -41,7 +39,9 @@ public class MainActivity extends AppCompatActivity {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                if (null == bean || TextUtils.isEmpty(bean.getInfo())) return false;
+                if (null == bean || TextUtils.isEmpty(bean.getInfo())) {
+                    return false;
+                }
                 buffer.append(bean.getInfo());
                 buffer.append("\r\n");
                 showSocketMsg(bean.getData());
@@ -57,6 +57,29 @@ public class MainActivity extends AppCompatActivity {
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
         binding.setPresenter(new Presenter());
         startSocketClient();
+        observerData();
+    }
+
+    private void observerData() {
+        ThreadFactoryImpl threadFactory = new ThreadFactoryImpl();
+        threadFactory.newThread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    String data = LiveStreamRepository.getInstance().getData();
+                    if (!TextUtils.isEmpty(data)) {
+                        buffer.append(data);
+                        buffer.append("\r\n");
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                showSocketMsg(null);
+                            }
+                        });
+                    }
+                }
+            }
+        }).start();
     }
 
     private void showSocketMsg(final byte[] data) {
@@ -67,12 +90,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startSocketClient() {
-        socketClient = new SocketClientImpl(handler);
+//        socketClient = new SocketClientImpl(handler);
+        socketClient = new SocketTextImpl();
         new Thread(socketClient).start();
     }
 
     private void showImg(byte[] data) {
-        if (null == data) return;
+        if (null == data) {
+            return;
+        }
         Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
         binding.imgShow.setImageBitmap(bitmap);
     }
@@ -85,7 +111,23 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void sendData2Server(final String hint, final Bitmap bmp) {
+    public void sendData2Server(final String hint) {
+        ThreadFactoryImpl threadFactory = new ThreadFactoryImpl();
+        threadFactory.newThread(new Runnable() {
+            @Override
+            public void run() {
+                if (null != socketClient) {
+                    try {
+                        socketClient.send(hint);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
+    }
+
+    /*public void sendData2Server(final String hint, final Bitmap bmp) {
         ExecutorService service = Executors.newSingleThreadExecutor();
         service.submit(new Runnable() {
             @Override
@@ -106,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-    }
+    }*/
 
     public class Presenter {
 
@@ -117,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
             try {
-                sendData2Server(text, null);
+                sendData2Server(text);
             } catch (Exception e) {
                 Toast.makeText(MainActivity.this, "消息发送失败！", Toast.LENGTH_SHORT).show();
             }
